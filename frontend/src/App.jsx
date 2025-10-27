@@ -11,18 +11,40 @@ function App() {
 
     const userMessage = { role: 'user', content: input }
     setMessages(prev => [...prev, userMessage])
+    const currentInput = input
     setInput('')
     setLoading(true)
 
-    // TODO: Implement API call
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: currentInput }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get response')
+      }
+
+      const data = await response.json()
       const aiMessage = {
         role: 'assistant',
-        content: 'This is a placeholder response. API integration coming next!'
+        content: data.content,
+        sources: data.sources || []
       }
       setMessages(prev => [...prev, aiMessage])
+    } catch (error) {
+      console.error('Error:', error)
+      const aiMessage = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.'
+      }
+      setMessages(prev => [...prev, aiMessage])
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   const handleKeyPress = (e) => {
