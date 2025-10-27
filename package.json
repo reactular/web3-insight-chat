@@ -1,0 +1,20 @@
+{
+  "name": "web3-insight-chat",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "install:all": "cd frontend && pnpm install && cd ../backend && pnpm install",
+    "dev": "concurrently \"pnpm:dev:be\" \"pnpm:dev:fe\"",
+    "dev:fe": "cd frontend && pnpm dev",
+    "dev:be": "cd backend && pnpm dev",
+    "build": "cd frontend && pnpm build && cd ../backend && pnpm install --prod",
+    "build:fe": "cd frontend && pnpm build",
+    "start": "concurrently \"pnpm:start:be\" \"pnpm:start:fe\"",
+    "start:fe": "cd frontend && pnpm preview",
+    "start:be": "cd backend && pnpm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
