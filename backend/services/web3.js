@@ -161,3 +161,68 @@ export async function getWeb3Trends() {
   }
 }
 
+/**
+ * Searches for relevant Web3 context based on query
+ */
+export async function searchWeb3Context(query) {
+  try {
+    const lowerQuery = query.toLowerCase();
+    const sources = [];
+
+    // Determine what type of information to fetch based on query
+    let relevantData = '';
+    const keywords = lowerQuery.split(' ');
+
+    // Check if query is about specific coins
+    const coinKeywords = ['bitcoin', 'btc', 'ethereum', 'eth', 'bnb', 'solana', 'sol', 'cardano', 'ada'];
+    const hasCoinKeyword = coinKeywords.some(keyword => keywords.some(k => k.includes(keyword)));
+
+    if (hasCoinKeyword || lowerQuery.includes('price') || lowerQuery.includes('coin')) {
+      const marketData = await getCryptoMarketData();
+      if (marketData.length > 0) {
+        relevantData += `Recent market data: ${marketData.map(c => `${c.name} (${c.symbol}) at $${c.price}`).join(', ')}.\n`;
+        sources.push({ name: 'CoinGecko', url: 'https://www.coingecko.com' });
+      }
+    }
+
+    // Check if query is about DeFi
+    if (lowerQuery.includes('defi') || lowerQuery.includes('lending') || lowerQuery.includes('yield')) {
+      const defiData = await getDeFiProtocols();
+      if (defiData.length > 0) {
+        relevantData += `Top DeFi protocols: ${defiData.map(p => `${p.name} on ${p.chain}`).join(', ')}.\n`;
+        sources.push({ name: 'DeFiLlama', url: 'https://defillama.com' });
+      }
+    }
+
+    // Check if query is about trends
+    if (lowerQuery.includes('trending') || lowerQuery.includes('trend')) {
+      const trending = await getTrendingCoins();
+      if (trending.length > 0) {
+        relevantData += `Currently trending: ${trending.map(c => `${c.name} (${c.symbol})`).join(', ')}.\n`;
+        sources.push({ name: 'CoinGecko', url: 'https://www.coingecko.com' });
+      }
+    }
+
+    // General Web3 context if no specific match
+    if (!relevantData) {
+      relevantData = 'Web3 ecosystem is evolving rapidly with DeFi, NFTs, and Layer 2 solutions. ';
+      const trends = await getWeb3Trends();
+      if (trends.market_data.length > 0) {
+        relevantData += `Current top cryptocurrencies include ${trends.market_data.slice(0, 3).map(c => c.name).join(', ')}.`;
+      }
+      sources.push({ name: 'CoinGecko', url: 'https://www.coingecko.com' });
+    }
+
+    return {
+      relevantData,
+      sources
+    };
+  } catch (error) {
+    console.error('Error searching Web3 context:', error);
+    return {
+      relevantData: 'Web3 data is currently unavailable.',
+      sources: []
+    };
+  }
+}
+
