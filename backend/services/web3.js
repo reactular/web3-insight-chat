@@ -134,3 +134,30 @@ async function getCryptoMarketData() {
   }
 }
 
+/**
+ * Fetches current Web3 trends and data
+ */
+export async function getWeb3Trends() {
+  try {
+    const [trendingCoins, defiProtocols, marketData] = await Promise.all([
+      getTrendingCoins(),
+      getDeFiProtocols(),
+      getCryptoMarketData()
+    ]);
+
+    return {
+      trending_coins: trendingCoins,
+      top_defi_protocols: defiProtocols,
+      market_data: marketData,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error fetching Web3 trends:', error);
+    return {
+      trending_coins: [],
+      top_defi_protocols: [],
+      market_data: []
+    };
+  }
+}
+
