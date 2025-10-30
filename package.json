@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "install:all": "cd frontend && pnpm install && cd ../backend && pnpm install",
-    "dev": "concurrently \"pnpm:dev:be\" \"pnpm:dev:fe\"",
+    "dev": "concurrently \"pnpm:dev:be\" \"pnpm:dev:fe --host\"",
     "dev:fe": "cd frontend && pnpm dev",
     "dev:be": "cd backend && pnpm dev",
     "build": "cd frontend && pnpm build && cd ../backend && pnpm install --prod",
