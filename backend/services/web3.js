@@ -52,7 +52,7 @@ async function getTrendingCoins() {
     setCache('trending_coins', trending);
     return trending;
   } catch (error) {
-    console.error('Error fetching trending coins:', error);
+    console.error('Error fetching trending coins:', error.message);
     return [];
   }
 }
@@ -89,7 +89,7 @@ async function getDeFiProtocols() {
     setCache('defi_protocols', topProtocols);
     return topProtocols;
   } catch (error) {
-    console.error('Error fetching DeFi protocols:', error);
+    console.error('Error fetching DeFi protocols:', error.message);
     return [];
   }
 }
@@ -129,7 +129,7 @@ async function getCryptoMarketData() {
     setCache('market_data', marketData);
     return marketData;
   } catch (error) {
-    console.error('Error fetching market data:', error);
+    console.error('Error fetching market data:', error.message);
     return [];
   }
 }
@@ -152,7 +152,7 @@ export async function getWeb3Trends() {
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('Error fetching Web3 trends:', error);
+    console.error('Error fetching Web3 trends:', error.message);
     return {
       trending_coins: [],
       top_defi_protocols: [],
@@ -218,10 +218,13 @@ export async function searchWeb3Context(query) {
       sources
     };
   } catch (error) {
-    console.error('Error searching Web3 context:', error);
+    console.error('Error searching Web3 context:', error.message);
+    
+    // Provide fallback context when APIs are unavailable
     return {
-      relevantData: 'Web3 data is currently unavailable.',
-      sources: []
+      relevantData: 'Web3 is a rapidly evolving space including DeFi, NFTs, blockchain technology, and cryptocurrencies. ' +
+        'Due to network constraints, I cannot fetch current market data, but I can still discuss Web3 concepts and trends.',
+      sources: [{ name: 'General Web3 Knowledge', url: '#' }]
     };
   }
 }
