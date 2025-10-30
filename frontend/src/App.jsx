@@ -71,6 +71,22 @@ function App() {
           {messages.map((msg, idx) => (
             <div key={idx} className={`message ${msg.role}`}>
               <div className="message-content">{msg.content}</div>
+              {msg.sources && msg.sources.length > 0 && (
+                <div className="message-sources">
+                  <div className="sources-label">Sources:</div>
+                  {msg.sources.map((source, srcIdx) => (
+                    <a 
+                      key={srcIdx} 
+                      href={source.url || '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="source-link"
+                    >
+                      {source.name}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {loading && (
