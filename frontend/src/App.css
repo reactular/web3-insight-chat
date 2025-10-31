@@ -53,6 +53,8 @@
 
 .message {
   display: flex;
+  flex-direction: column; /* stack content and sources vertically */
+  gap: 6px; /* space between bubble and sources */
   max-width: 70%;
   animation: fadeIn 0.3s;
 }
