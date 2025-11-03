@@ -64,7 +64,43 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Vector store management endpoints
+// Add a document to the vector store
+app.post('/api/documents', async (req, res) => {
+  try {
+    const { content, metadata } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ error: 'Content is required' });
+    }
+
+    const docId = await addDocument(content, metadata || {});
+    res.json({ 
+      success: true, 
+      id: docId,
+      message: 'Document added to vector store'
+    });
+  } catch (error) {
+    console.error('Error adding document:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
+// Get all documents (for debugging)
+app.get('/api/documents', async (req, res) => {
+  try {
+    const documents = await getAllDocuments();
+    res.json({ documents });
+  } catch (error) {
+    console.error('Error getting documents:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Vector store endpoints:`);
+  console.log(`  POST /api/documents - Add document`);
+  console.log(`  GET /api/documents - List all documents`);
 });
 
