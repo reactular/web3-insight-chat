@@ -30,20 +30,11 @@ async function setupDatabase() {
     const schemaPath = join(__dirname, 'schema.sql');
     const schemaSQL = readFileSync(schemaPath, 'utf8');
 
-    // Execute each statement
-    const statements = schemaSQL
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
-
-    for (const statement of statements) {
-      if (statement.includes('COMMENT')) {
-        // Skip COMMENT statements for now
-        continue;
-      }
-      await pool.query(statement);
-      console.log('✅ Executed:', statement.substring(0, 50) + '...');
-    }
+    // Execute the entire SQL file at once
+    // PostgreSQL handles comments and multiple statements automatically
+    console.log('📝 Executing schema.sql...\n');
+    await pool.query(schemaSQL);
+    console.log('✅ Schema executed successfully');
 
     console.log('\n✨ Database setup complete!');
     console.log('📊 You can now use the vector store to add and search documents.\n');
