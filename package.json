@@ -11,7 +11,8 @@
     "build:fe": "cd frontend && pnpm build",
     "start": "concurrently \"pnpm:start:be\" \"pnpm:start:fe\"",
     "start:fe": "cd frontend && pnpm preview",
-    "start:be": "cd backend && pnpm start"
+    "start:be": "cd backend && pnpm start",
+    "setup-db": "cd backend && pnpm setup-db"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
