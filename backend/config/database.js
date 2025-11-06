@@ -6,7 +6,10 @@
  */
 
 import pkg from 'pg';
+import dotenv from 'dotenv';
+
 const { Pool } = pkg;
+dotenv.config();
 
 // Create a connection pool (reuses connections efficiently)
 export const pool = new Pool({
