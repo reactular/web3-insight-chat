@@ -3,9 +3,11 @@
  * Handles fetching data from various Web3 APIs
  */
 
+import { logger } from '../utils/logger.js';
+
 // Cache for API responses to avoid rate limits
 let cache = {};
-const CACHE_TTL = 60000; // 1 minute
+const CACHE_TTL = parseInt(process.env.WEB3_CACHE_TTL || '60000'); // Default: 1 minute
 
 function getCached(key) {
   const item = cache[key];
@@ -52,7 +54,7 @@ async function getTrendingCoins() {
     setCache('trending_coins', trending);
     return trending;
   } catch (error) {
-    console.error('Error fetching trending coins:', error.message);
+    logger.error('Error fetching trending coins:', error.message);
     return [];
   }
 }
@@ -89,7 +91,7 @@ async function getDeFiProtocols() {
     setCache('defi_protocols', topProtocols);
     return topProtocols;
   } catch (error) {
-    console.error('Error fetching DeFi protocols:', error.message);
+    logger.error('Error fetching DeFi protocols:', error.message);
     return [];
   }
 }
@@ -129,7 +131,7 @@ async function getCryptoMarketData() {
     setCache('market_data', marketData);
     return marketData;
   } catch (error) {
-    console.error('Error fetching market data:', error.message);
+    logger.error('Error fetching market data:', error.message);
     return [];
   }
 }
@@ -152,7 +154,7 @@ export async function getWeb3Trends() {
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error('Error fetching Web3 trends:', error.message);
+    logger.error('Error fetching Web3 trends:', error.message);
     return {
       trending_coins: [],
       top_defi_protocols: [],
@@ -218,7 +220,7 @@ export async function searchWeb3Context(query) {
       sources
     };
   } catch (error) {
-    console.error('Error searching Web3 context:', error.message);
+    logger.error('Error searching Web3 context:', error.message);
     
     // Provide fallback context when APIs are unavailable
     return {

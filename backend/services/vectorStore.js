@@ -16,6 +16,7 @@
 
 import { pool } from '../config/database.js';
 import { getEmbedding } from './embeddings.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Adds a document to the vector store
@@ -31,7 +32,7 @@ export async function addDocument(content, metadata = {}) {
 
   try {
     // Step 1: Convert text to embedding vector
-    console.log('Generating embedding for document...');
+    logger.debug('Generating embedding for document...');
     const embedding = await getEmbedding(content);
 
     // Step 2: Insert document with embedding into database
@@ -48,10 +49,10 @@ export async function addDocument(content, metadata = {}) {
       `[${embedding.join(',')}]` // Convert array to string format for Postgres
     ]);
 
-    console.log(`✅ Document added with ID: ${result.rows[0].id}`);
+    logger.info(`Document added with ID: ${result.rows[0].id}`);
     return result.rows[0].id;
   } catch (error) {
-    console.error('Error adding document:', error);
+    logger.error('Error adding document:', error);
     throw error;
   }
 }
@@ -69,7 +70,7 @@ export async function addDocuments(documents) {
 
   try {
     // Generate embeddings for all documents
-    console.log(`Generating embeddings for ${documents.length} documents...`);
+    logger.info(`Generating embeddings for ${documents.length} documents...`);
     const texts = documents.map(doc => doc.content);
     const embeddings = await getEmbeddings(texts);
 
@@ -94,10 +95,10 @@ export async function addDocuments(documents) {
       ids.push(result.rows[0].id);
     }
 
-    console.log(`✅ Added ${ids.length} documents to vector store`);
+    logger.info(`Added ${ids.length} documents to vector store`);
     return ids;
   } catch (error) {
-    console.error('Error adding documents:', error);
+    logger.error('Error adding documents:', error);
     throw error;
   }
 }
@@ -110,14 +111,18 @@ export async function addDocuments(documents) {
  * @param {number} minSimilarity - Minimum similarity score threshold (0-1, default: 0.7)
  * @returns {Promise<Array<{id: number, content: string, metadata: object, similarity: number}>>}
  */
-export async function searchSimilar(query, limit = 5, minSimilarity = 0.7) {
+export async function searchSimilar(
+  query, 
+  limit = parseInt(process.env.VECTOR_SEARCH_LIMIT || '5'), 
+  minSimilarity = parseFloat(process.env.VECTOR_MIN_SIMILARITY || '0.6')
+) {
   if (!query || query.trim().length === 0) {
     throw new Error('Query cannot be empty');
   }
 
   try {
     // Step 1: Convert query to embedding
-    console.log('Generating embedding for query...');
+    logger.debug('Generating embedding for query...');
     const queryEmbedding = await getEmbedding(query);
 
     // Step 2: Search using cosine similarity
@@ -141,7 +146,7 @@ export async function searchSimilar(query, limit = 5, minSimilarity = 0.7) {
       limit
     ]);
 
-    console.log(`✅ Found ${result.rows.length} similar documents`);
+    logger.info(`Found ${result.rows.length} similar documents`);
     
     return result.rows.map(row => ({
       id: row.id,
@@ -150,7 +155,7 @@ export async function searchSimilar(query, limit = 5, minSimilarity = 0.7) {
       similarity: parseFloat(row.similarity)
     }));
   } catch (error) {
-    console.error('Error searching documents:', error);
+    logger.error('Error searching documents:', error);
     throw error;
   }
 }
@@ -165,7 +170,7 @@ export async function getAllDocuments() {
     );
     return result.rows;
   } catch (error) {
-    console.error('Error getting documents:', error);
+    logger.error('Error getting documents:', error);
     throw error;
   }
 }
@@ -181,7 +186,7 @@ export async function deleteDocument(id) {
     );
     return result.rows[0]?.id;
   } catch (error) {
-    console.error('Error deleting document:', error);
+    logger.error('Error deleting document:', error);
     throw error;
   }
 }

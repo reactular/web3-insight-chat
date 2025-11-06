@@ -100,7 +100,7 @@ export async function getLLMResponse(message, context = '') {
 
     return response;
   } catch (error) {
-    console.error('LLM API Error:', error);
+    logger.error('LLM API Error:', error);
     throw error;
   }
 }

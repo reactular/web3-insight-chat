@@ -130,9 +130,11 @@ app.get('/api/documents', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Vector store endpoints:`);
-  console.log(`  POST /api/documents - Add document`);
-  console.log(`  GET /api/documents - List all documents`);
+  logger.success(`Server running on http://localhost:${PORT}`);
+  logger.info('API Endpoints:');
+  logger.info('  POST /api/chat - Chat with AI');
+  logger.info('  POST /api/documents - Add document to vector store');
+  logger.info('  GET /api/documents - List all documents');
+  logger.info('  GET /health - Health check');
 });
 

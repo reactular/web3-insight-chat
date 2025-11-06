@@ -51,7 +51,7 @@ export async function getEmbedding(text) {
     // Return the embedding vector (array of 1536 numbers)
     return data.data[0].embedding;
   } catch (error) {
-    console.error('Error getting embedding:', error);
+    logger.error('Error getting embedding:', error);
     throw error;
   }
 }
@@ -95,7 +95,7 @@ export async function getEmbeddings(texts) {
     // Return array of embedding vectors
     return data.data.map(item => item.embedding);
   } catch (error) {
-    console.error('Error getting embeddings:', error);
+    logger.error('Error getting embeddings:', error);
     throw error;
   }
 }
