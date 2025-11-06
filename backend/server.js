@@ -7,6 +7,7 @@ import { searchSimilar, addDocument, getAllDocuments } from './services/vectorSt
 import { testConnection } from './config/database.js';
 
 dotenv.config();
+import { errorHandler } from './utils/errors.js';
 import { validateEnvironment } from './utils/envValidator.js';
 // Validate environment variables on startup
 try {
@@ -136,6 +137,7 @@ app.get('/api/documents', async (req, res) => {
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   logger.success(`Server running on http://localhost:${PORT}`);
