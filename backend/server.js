@@ -7,6 +7,14 @@ import { searchSimilar, addDocument, getAllDocuments } from './services/vectorSt
 import { testConnection } from './config/database.js';
 
 dotenv.config();
+import { validateEnvironment } from './utils/envValidator.js';
+// Validate environment variables on startup
+try {
+  validateEnvironment();
+} catch (error) {
+  logger.error('Failed to start server:', error.message);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 8000;
