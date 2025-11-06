@@ -50,7 +50,7 @@ An AI-powered chat application that provides intelligent insights about Web3 tre
 
 ## ✨ Features
 
-- **🤖 AI-Powered Chat**: Intelligent conversations about Web3 using OpenAI GPT-4 or Anthropic Claude
+- **🤖 AI-Powered Chat**: Intelligent conversations about Web3 using OpenAI GPT-4.1 or Anthropic Claude
 - **📊 Real-Time Web3 Data**: Live cryptocurrency prices, trending coins, and DeFi protocol data
 - **🧠 Vector Store**: Semantic search across stored knowledge using pgvector
 - **🔗 Source Attribution**: All responses include clickable source links
@@ -370,7 +370,7 @@ MIT
 
 ## 🙏 Acknowledgments
 
-- Built with OpenAI GPT-4 and text-embedding-3-small
+- Built with OpenAI GPT-4.1 and text-embedding-3-small
 - Web3 data from CoinGecko and DeFiLlama
 - Vector search powered by pgvector
 
