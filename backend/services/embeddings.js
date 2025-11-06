@@ -10,8 +10,9 @@
  * 4. Similar texts will have similar vectors (cosine similarity)
  */
 
+import { logger } from '../utils/logger.js';
+
 const OPENAI_EMBEDDING_URL = 'https://api.openai.com/v1/embeddings';
-const OPENAI_MODEL = 'text-embedding-3-small'; // 1536 dimensions, good balance of quality and cost
 
 /**
  * Converts text to a vector embedding
@@ -36,7 +37,7 @@ export async function getEmbedding(text) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
         input: text.trim()
       })
     });
@@ -80,7 +81,7 @@ export async function getEmbeddings(texts) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
         input: texts.map(t => t.trim())
       })
     });

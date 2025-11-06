@@ -3,6 +3,8 @@
  * Handles communication with LLM providers (OpenAI, Anthropic)
  */
 
+import { logger } from '../utils/logger.js';
+
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -17,7 +19,7 @@ async function callOpenAI(prompt, apiKey) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4.1-nano',
+      model: process.env.OPENAI_MODEL || 'gpt-4.1',
       messages: [
         {
           role: 'system',
@@ -28,8 +30,8 @@ async function callOpenAI(prompt, apiKey) {
           content: prompt
         }
       ],
-      temperature: 0.7,
-      max_tokens: 1000
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
+      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || '1000')
     })
   });
 
@@ -54,8 +56,8 @@ async function callAnthropic(prompt, apiKey) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 1000,
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-sonnet-20240229',
+      max_tokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '1000'),
       messages: [
         {
           role: 'user',
