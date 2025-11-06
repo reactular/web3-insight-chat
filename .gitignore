@@ -3,6 +3,8 @@ node_modules/
 __pycache__/
 *.pyc
 .env
+.env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -19,4 +21,15 @@ Thumbs.db
 dist/
 build/
 *.log
+logs/
+*.log.*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
 
