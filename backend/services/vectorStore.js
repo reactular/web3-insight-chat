@@ -15,7 +15,7 @@
  */
 
 import { pool } from '../config/database.js';
-import { getEmbedding } from './embeddings.js';
+import { getEmbedding, getEmbeddings } from './embeddings.js';
 import { logger } from '../utils/logger.js';
 
 /**
