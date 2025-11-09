@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "setup-db": "node database/setup.js"
+    "setup-db": "node database/setup.js",
+    "import-docs": "node database/import-documents.js"
   },
   "dependencies": {
     "express": "^4.18.2",

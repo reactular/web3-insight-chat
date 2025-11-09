@@ -1,0 +1,171 @@
+[
+  {
+    "content": "Ethereum is a decentralized blockchain platform that enables smart contracts and decentralized applications (DApps). It uses the Ethereum Virtual Machine (EVM) to execute code. Ethereum introduced the concept of programmable money and has become the foundation for most DeFi protocols. The network transitioned from proof-of-work to proof-of-stake in 2022, significantly reducing energy consumption.",
+    "metadata": {
+      "title": "Ethereum Platform Overview",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org"
+    }
+  },
+  {
+    "content": "DeFi (Decentralized Finance) refers to financial services built on blockchain networks, primarily Ethereum. Key DeFi protocols include Uniswap for decentralized exchanges, Aave and Compound for lending and borrowing, MakerDAO for stablecoins, and Curve for stablecoin swaps. DeFi eliminates intermediaries and allows peer-to-peer financial transactions with transparency and programmability.",
+    "metadata": {
+      "title": "Decentralized Finance (DeFi)",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/defi/"
+    }
+  },
+  {
+    "content": "Bitcoin is the first and largest cryptocurrency by market capitalization, created by Satoshi Nakamoto in 2009. It uses a proof-of-work consensus mechanism where miners solve cryptographic puzzles to validate transactions. Bitcoin has a fixed supply of 21 million coins and is often called 'digital gold' due to its store of value properties and limited issuance.",
+    "metadata": {
+      "title": "Bitcoin Fundamentals",
+      "source": "Web3 Knowledge Base",
+      "url": "https://bitcoin.org"
+    }
+  },
+  {
+    "content": "Smart contracts are self-executing contracts with terms written in code. They automatically execute when predefined conditions are met, eliminating the need for intermediaries. Ethereum popularized smart contracts, enabling trustless transactions. They power DeFi protocols, NFTs, DAOs, and many other blockchain applications. Smart contracts are immutable once deployed, making security audits crucial.",
+    "metadata": {
+      "title": "Smart Contracts Explained",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/smart-contracts/"
+    }
+  },
+  {
+    "content": "NFTs (Non-Fungible Tokens) are unique digital assets stored on blockchain that represent ownership of specific items. Unlike cryptocurrencies, each NFT is one-of-a-kind and cannot be exchanged on a one-to-one basis. NFTs are commonly used for digital art, collectibles, gaming items, music, domain names, and proof of ownership. The ERC-721 and ERC-1155 standards are the most common NFT standards on Ethereum.",
+    "metadata": {
+      "title": "Non-Fungible Tokens (NFTs)",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/nft/"
+    }
+  },
+  {
+    "content": "Layer 2 solutions are scaling technologies built on top of Ethereum to increase transaction throughput and reduce fees. Popular L2 solutions include Arbitrum, Optimism (both optimistic rollups), Polygon (sidechain), zkSync and Starknet (zero-knowledge rollups). They process transactions off-chain and settle on Ethereum mainnet for security, achieving speeds of thousands of transactions per second.",
+    "metadata": {
+      "title": "Layer 2 Scaling Solutions",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/layer-2/"
+    }
+  },
+  {
+    "content": "Staking is the process of locking cryptocurrency to support network operations and earn rewards. Ethereum uses proof-of-stake where validators stake 32 ETH to validate transactions and create new blocks. Staking provides passive income while securing the network. Users can stake directly or through staking pools and liquid staking protocols like Lido and Rocket Pool.",
+    "metadata": {
+      "title": "Cryptocurrency Staking",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/staking/"
+    }
+  },
+  {
+    "content": "DAOs (Decentralized Autonomous Organizations) are member-owned communities without centralized leadership. They use smart contracts to govern decisions and manage treasury funds. DAOs enable collective decision-making through token-based voting systems. Popular DAOs include Uniswap DAO, MakerDAO, and Aave DAO. They represent a new form of organizational structure enabled by blockchain technology.",
+    "metadata": {
+      "title": "Decentralized Autonomous Organizations",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/dao/"
+    }
+  },
+  {
+    "content": "Stablecoins are cryptocurrencies designed to maintain a stable value, typically pegged to fiat currencies like the US dollar. Major stablecoins include USDC and USDT (fiat-collateralized), DAI (crypto-collateralized), and algorithmic stablecoins. They provide price stability for DeFi transactions and serve as a bridge between traditional finance and crypto markets.",
+    "metadata": {
+      "title": "Stablecoins in DeFi",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/stablecoins/"
+    }
+  },
+  {
+    "content": "DEXs (Decentralized Exchanges) allow users to trade cryptocurrencies without intermediaries. Unlike centralized exchanges, DEXs use automated market makers (AMMs) or order books. Uniswap is the largest DEX using constant product formula AMM. Other major DEXs include Curve (for stablecoins), Balancer, and SushiSwap. DEXs provide non-custodial trading with users maintaining control of their funds.",
+    "metadata": {
+      "title": "Decentralized Exchanges",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/dapps/#dex"
+    }
+  },
+  {
+    "content": "Yield farming involves lending or staking cryptocurrency to earn rewards, typically in the form of additional tokens. Users provide liquidity to DeFi protocols and receive LP (liquidity provider) tokens, which can be staked for additional yields. Popular yield farming platforms include Yearn Finance, Compound, and Aave. Risks include smart contract vulnerabilities and impermanent loss.",
+    "metadata": {
+      "title": "Yield Farming and Liquidity Mining",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/defi/#yield-farming"
+    }
+  },
+  {
+    "content": "Liquidity pools are collections of tokens locked in smart contracts that enable decentralized trading. Users provide liquidity by depositing equal values of two tokens (e.g., ETH and USDC) and receive LP tokens representing their share. Liquidity providers earn fees from trades. Impermanent loss occurs when token prices diverge from the initial deposit ratio.",
+    "metadata": {
+      "title": "Liquidity Pools and AMMs",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/dapps/#amm"
+    }
+  },
+  {
+    "content": "Web3 wallets are applications that store private keys and enable interaction with blockchain networks. Types include hardware wallets (Ledger, Trezor), software wallets (MetaMask, Trust Wallet), and custodial wallets (exchange wallets). Wallets generate addresses for receiving funds and sign transactions. Security best practices include never sharing seed phrases and using hardware wallets for large amounts.",
+    "metadata": {
+      "title": "Cryptocurrency Wallets",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/wallets/"
+    }
+  },
+  {
+    "content": "Gas fees are payments made to process transactions on blockchain networks. On Ethereum, gas fees are paid in ETH and vary based on network congestion. Users can set gas prices (gwei) to prioritize transactions. Layer 2 solutions significantly reduce gas fees. EIP-1559 introduced a base fee mechanism that burns ETH, making ETH deflationary during high usage.",
+    "metadata": {
+      "title": "Gas Fees and Transaction Costs",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/gas/"
+    }
+  },
+  {
+    "content": "MEV (Maximal Extractable Value) refers to profits validators can extract by reordering, including, or excluding transactions in blocks. MEV includes front-running, back-running, and sandwich attacks. Solutions include Flashbots (private transaction pools), MEV-Boost for Ethereum validators, and protocols like CowSwap that protect users from MEV extraction.",
+    "metadata": {
+      "title": "Maximal Extractable Value (MEV)",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/mev/"
+    }
+  },
+  {
+    "content": "Zero-knowledge proofs allow one party to prove knowledge of information without revealing the information itself. ZK-rollups use zero-knowledge proofs to bundle transactions off-chain and submit validity proofs to mainnet. This enables high throughput and low fees while maintaining security. Examples include zkSync, Starknet, and Polygon zkEVM. ZK-proofs enable privacy-preserving transactions.",
+    "metadata": {
+      "title": "Zero-Knowledge Proofs and ZK-Rollups",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/scaling/zk-rollups/"
+    }
+  },
+  {
+    "content": "Cross-chain bridges enable transfer of assets between different blockchain networks. They lock assets on one chain and mint equivalent tokens on another. Major bridges include Wormhole, Multichain, and LayerZero. Bridge security is critical as they've been targets of major hacks. Risks include smart contract vulnerabilities, validator collusion, and centralization.",
+    "metadata": {
+      "title": "Cross-Chain Bridges",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/bridges/"
+    }
+  },
+  {
+    "content": "Token standards define how tokens function on blockchain networks. ERC-20 is the standard for fungible tokens (like cryptocurrencies). ERC-721 is for unique NFTs. ERC-1155 enables both fungible and non-fungible tokens in a single contract. ERC-4626 standardizes yield-bearing vaults. Standards ensure interoperability between different applications and wallets.",
+    "metadata": {
+      "title": "Ethereum Token Standards",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/standards/tokens/"
+    }
+  },
+  {
+    "content": "Oracle networks provide external data to blockchain smart contracts, which cannot access off-chain data directly. Chainlink is the most widely used oracle network, providing price feeds, randomness, and other data. Oracles are critical for DeFi protocols that need accurate price data. Security is paramount as oracle manipulation can lead to protocol exploits.",
+    "metadata": {
+      "title": "Blockchain Oracles",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/developers/docs/oracles/"
+    }
+  },
+  {
+    "content": "Account abstraction allows Ethereum accounts to be programmable smart contracts instead of simple key pairs. EIP-4337 enables account abstraction without protocol changes. Benefits include social recovery, multi-sig wallets, spending limits, and gasless transactions. This improves user experience and enables advanced wallet features without changing core Ethereum protocol.",
+    "metadata": {
+      "title": "Account Abstraction and EIP-4337",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/roadmap/account-abstraction/"
+    }
+  },
+  {
+    "content": "The Merge was Ethereum's transition from proof-of-work to proof-of-stake consensus in September 2022. This reduced energy consumption by 99.95% and set the foundation for future scaling improvements. The Merge combined the execution layer (mainnet) with the consensus layer (Beacon Chain). Future upgrades include sharding to further increase throughput and reduce costs.",
+    "metadata": {
+      "title": "Ethereum Merge and Future Upgrades",
+      "source": "Web3 Knowledge Base",
+      "url": "https://ethereum.org/en/roadmap/merge/"
+    }
+  }
+]
+
