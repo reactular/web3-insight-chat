@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { testConnection } from './config/database.js';
-import { handleChat } from './controllers/chatController.js';
+import { handleChat, handleChatStream } from './controllers/chatController.js';
 import { addDocumentHandler, getAllDocumentsHandler } from './controllers/documentController.js';
 import { validateChatRequest, validateDocumentRequest } from './utils/validation.js';
 import { errorHandler } from './utils/errors.js';
@@ -31,8 +31,9 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// Chat endpoint (with validation)
+// Chat endpoints (with validation)
 app.post('/api/chat', validateChatRequest, handleChat);
+app.post('/api/chat/stream', validateChatRequest, handleChatStream);
 
 // Vector store management endpoints (with validation)
 app.post('/api/documents', validateDocumentRequest, addDocumentHandler);
@@ -44,7 +45,8 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   logger.success(`Server running on http://localhost:${PORT}`);
   logger.info('API Endpoints:');
-  logger.info('  POST /api/chat - Chat with AI');
+  logger.info('  POST /api/chat - Chat with AI (non-streaming)');
+  logger.info('  POST /api/chat/stream - Chat with AI (streaming)');
   logger.info('  POST /api/documents - Add document to vector store');
   logger.info('  GET /api/documents - List all documents');
   logger.info('  GET /health - Health check');
