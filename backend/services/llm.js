@@ -77,6 +77,147 @@ async function callAnthropic(prompt, apiKey) {
 }
 
 /**
+ * Streams OpenAI API response
+ */
+async function* streamOpenAI(prompt, apiKey) {
+  const response = await fetch(OPENAI_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4.1',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful AI assistant specializing in Web3, blockchain, and cryptocurrency trends. Provide accurate, up-to-date information and insights.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
+      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || '1000'),
+      stream: true
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            return;
+          }
+          try {
+            const json = JSON.parse(data);
+            const content = json.choices?.[0]?.delta?.content;
+            if (content) {
+              yield content;
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
+ * Streams Anthropic API response
+ */
+async function* streamAnthropic(prompt, apiKey) {
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-sonnet-20240229',
+      max_tokens: parseInt(process.env.ANTHROPIC_MAX_TOKENS || '1000'),
+      messages: [
+        {
+          role: 'user',
+          content: `You are a helpful AI assistant specializing in Web3, blockchain, and cryptocurrency trends. Provide accurate, up-to-date information and insights.\n\n${prompt}`
+        }
+      ],
+      stream: true
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Anthropic API error: ${error.error?.message || 'Unknown error'}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') {
+            return;
+          }
+          try {
+            const json = JSON.parse(data);
+            // Anthropic streaming format
+            if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
+              const content = json.delta.text;
+              if (content) {
+                yield content;
+              }
+            } else if (json.type === 'message_delta' || json.type === 'message_start') {
+              // Skip metadata events
+              continue;
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
  * Main function to get LLM response
  */
 export async function getLLMResponse(message, context = '') {
@@ -103,6 +244,35 @@ export async function getLLMResponse(message, context = '') {
     return response;
   } catch (error) {
     logger.error('LLM API Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Streams LLM response
+ * Returns an async generator that yields content chunks
+ */
+export async function* streamLLMResponse(message, context = '') {
+  const provider = process.env.LLM_PROVIDER?.toLowerCase();
+  const apiKey = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(`API key not found for provider: ${provider}`);
+  }
+
+  // Combine message with context if available
+  const prompt = context ? `Context: ${context}\n\nUser Question: ${message}` : message;
+
+  try {
+    if (provider === 'openai') {
+      yield* streamOpenAI(prompt, apiKey);
+    } else if (provider === 'anthropic') {
+      yield* streamAnthropic(prompt, apiKey);
+    } else {
+      throw new Error(`Unsupported LLM provider: ${provider}`);
+    }
+  } catch (error) {
+    logger.error('LLM Streaming Error:', error);
     throw error;
   }
 }
