@@ -104,17 +104,23 @@ export async function addDocuments(documents) {
 }
 
 /**
- * Searches for documents similar to the query
+ * Searches for documents similar to the query with optional metadata filtering
  * 
  * @param {string} query - The search query text
  * @param {number} limit - Maximum number of results (default: 5)
- * @param {number} minSimilarity - Minimum similarity score threshold (0-1, default: 0.7)
+ * @param {number} minSimilarity - Minimum similarity score threshold (0-1, default: 0.6)
+ * @param {object} metadataFilter - Optional metadata filter object
+ *   Examples:
+ *   - { source: 'CoinDesk' } - Filter by exact source
+ *   - { source: { $in: ['CoinDesk', 'Benzinga'] } } - Filter by multiple sources
+ *   - { title: { $like: '%Ethereum%' } } - Filter by title pattern
  * @returns {Promise<Array<{id: number, content: string, metadata: object, similarity: number}>>}
  */
 export async function searchSimilar(
   query, 
   limit = parseInt(process.env.VECTOR_SEARCH_LIMIT || '5'), 
-  minSimilarity = parseFloat(process.env.VECTOR_MIN_SIMILARITY || '0.6')
+  minSimilarity = parseFloat(process.env.VECTOR_MIN_SIMILARITY || '0.6'),
+  metadataFilter = {}
 ) {
   if (!query || query.trim().length === 0) {
     throw new Error('Query cannot be empty');
@@ -125,9 +131,71 @@ export async function searchSimilar(
     logger.debug('Generating embedding for query...');
     const queryEmbedding = await getEmbedding(query);
 
-    // Step 2: Search using cosine similarity
-    // pgvector's <=> operator calculates cosine distance (0 = identical, 1 = completely different)
-    // We use 1 - (distance) to get similarity (1 = identical, 0 = completely different)
+    // Step 2: Build metadata filter conditions
+    const filterConditions = [];
+    const filterParams = [];
+    let paramIndex = 4; // Start after embedding, minSimilarity, and limit params
+
+    // Validate metadata key names to prevent SQL injection
+    const isValidKey = (key) => {
+      return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key);
+    };
+
+    if (metadataFilter && Object.keys(metadataFilter).length > 0) {
+      for (const [key, value] of Object.entries(metadataFilter)) {
+        if (value === null || value === undefined) {
+          continue;
+        }
+
+        // Validate key name to prevent SQL injection
+        if (!isValidKey(key)) {
+          logger.warn(`Invalid metadata key name: ${key}. Skipping filter.`);
+          continue;
+        }
+
+        // Handle simple equality: { source: 'CoinDesk' }
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          filterConditions.push(`metadata->>'${key}' = $${paramIndex}`);
+          filterParams.push(String(value));
+          paramIndex++;
+        }
+        // Handle operators: { source: { $in: [...] } }
+        else if (typeof value === 'object' && !Array.isArray(value)) {
+          for (const [op, opValue] of Object.entries(value)) {
+            if (op === '$in' && Array.isArray(opValue)) {
+              // IN operator: { source: { $in: ['CoinDesk', 'Benzinga'] } }
+              const placeholders = opValue.map((_, i) => `$${paramIndex + i}`).join(', ');
+              filterConditions.push(`metadata->>'${key}' IN (${placeholders})`);
+              filterParams.push(...opValue.map(v => String(v)));
+              paramIndex += opValue.length;
+            } else if (op === '$like' || op === '$ilike') {
+              // LIKE/ILIKE operator: { title: { $like: '%Ethereum%' } }
+              const likeOp = op === '$ilike' ? 'ILIKE' : 'LIKE';
+              filterConditions.push(`metadata->>'${key}' ${likeOp} $${paramIndex}`);
+              filterParams.push(String(opValue));
+              paramIndex++;
+            } else if (op === '$exists') {
+              // EXISTS operator: { source: { $exists: true } }
+              if (opValue) {
+                filterConditions.push(`metadata ? '${key}'`);
+              } else {
+                filterConditions.push(`NOT (metadata ? '${key}')`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Step 3: Build the search query with metadata filters
+    const whereClause = [
+      `1 - (embedding <=> $1::vector) >= $2`
+    ];
+
+    if (filterConditions.length > 0) {
+      whereClause.push(...filterConditions);
+    }
+
     const searchQuery = `
       SELECT 
         id,
@@ -135,7 +203,7 @@ export async function searchSimilar(
         metadata,
         1 - (embedding <=> $1::vector) AS similarity
       FROM document_embeddings
-      WHERE 1 - (embedding <=> $1::vector) >= $2
+      WHERE ${whereClause.join(' AND ')}
       ORDER BY embedding <=> $1::vector
       LIMIT $3
     `;
@@ -143,10 +211,11 @@ export async function searchSimilar(
     const result = await pool.query(searchQuery, [
       `[${queryEmbedding.join(',')}]`,
       minSimilarity,
-      limit
+      limit,
+      ...filterParams
     ]);
 
-    logger.info(`Found ${result.rows.length} similar documents`);
+    logger.info(`Found ${result.rows.length} similar documents${filterConditions.length > 0 ? ' with metadata filters' : ''}`);
     
     return result.rows.map(row => ({
       id: row.id,
@@ -189,5 +258,78 @@ export async function deleteDocument(id) {
     logger.error('Error deleting document:', error);
     throw error;
   }
+}
+
+/**
+ * Gets unique values for a metadata field (useful for building filter UIs)
+ * 
+ * @param {string} metadataKey - The metadata key to get unique values for (e.g., 'source', 'title')
+ * @returns {Promise<string[]>} - Array of unique values
+ */
+export async function getMetadataValues(metadataKey) {
+  if (!metadataKey || typeof metadataKey !== 'string') {
+    throw new Error('Metadata key must be a non-empty string');
+  }
+
+  // Validate key name to prevent SQL injection
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(metadataKey)) {
+    throw new Error('Invalid metadata key name');
+  }
+
+  try {
+    const query = `
+      SELECT DISTINCT metadata->>'${metadataKey}' AS value
+      FROM document_embeddings
+      WHERE metadata->>'${metadataKey}' IS NOT NULL
+      ORDER BY value
+    `;
+
+    const result = await pool.query(query);
+    return result.rows.map(row => row.value).filter(Boolean);
+  } catch (error) {
+    logger.error('Error getting metadata values:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to create common metadata filters
+ * 
+ * @example
+ * // Filter by source
+ * searchSimilar(query, 5, 0.6, createMetadataFilter({ source: 'CoinDesk' }));
+ * 
+ * // Filter by multiple sources
+ * searchSimilar(query, 5, 0.6, createMetadataFilter({ source: ['CoinDesk', 'Benzinga'] }));
+ * 
+ * // Filter by title pattern
+ * searchSimilar(query, 5, 0.6, createMetadataFilter({ title: { like: '%Ethereum%' } }));
+ */
+export function createMetadataFilter(filters) {
+  const result = {};
+  
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+    
+    // Handle array values as $in operator
+    if (Array.isArray(value)) {
+      result[key] = { $in: value };
+    }
+    // Handle objects with 'like' or 'ilike' shorthand
+    else if (typeof value === 'object' && value.like !== undefined) {
+      result[key] = { $like: value.like };
+    }
+    else if (typeof value === 'object' && value.ilike !== undefined) {
+      result[key] = { $ilike: value.ilike };
+    }
+    // Handle simple values
+    else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
 }
 
