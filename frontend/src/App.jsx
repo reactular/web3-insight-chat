@@ -1,10 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const messagesEndRef = useRef(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -15,8 +24,18 @@ function App() {
     setInput('')
     setLoading(true)
 
+    // Create a placeholder message for streaming
+    const aiMessageId = Date.now()
+    const aiMessage = {
+      id: aiMessageId,
+      role: 'assistant',
+      content: '',
+      sources: []
+    }
+    setMessages(prev => [...prev, aiMessage])
+
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,20 +47,82 @@ function App() {
         throw new Error('Failed to get response')
       }
 
-      const data = await response.json()
-      const aiMessage = {
-        role: 'assistant',
-        content: data.content,
-        sources: data.sources || []
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let currentEvent = null
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = ''
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+
+          // SSE format: event: <event> or data: <json> followed by empty line
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim()
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim()
+            if (dataStr && currentEvent) {
+              try {
+                const data = JSON.parse(dataStr)
+
+                if (currentEvent === 'sources') {
+                  // Update sources
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, sources: data.sources || [] }
+                      : msg
+                  ))
+                } else if (currentEvent === 'chunk') {
+                  // Append chunk to content
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, content: msg.content + (data.content || '') }
+                      : msg
+                  ))
+                } else if (currentEvent === 'done') {
+                  // Streaming complete
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, content: data.fullContent || msg.content }
+                      : msg
+                  ))
+                } else if (currentEvent === 'error') {
+                  // Handle error
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === aiMessageId 
+                      ? { ...msg, content: data.error || 'An error occurred' }
+                      : msg
+                  ))
+                  break
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e, dataStr)
+              }
+            }
+            currentEvent = null
+          } else if (line.trim() === '') {
+            // Empty line separates SSE events
+            currentEvent = null
+          } else {
+            // Keep incomplete line in buffer
+            buffer = line + '\n'
+          }
+        }
       }
-      setMessages(prev => [...prev, aiMessage])
     } catch (error) {
       console.error('Error:', error)
-      const aiMessage = {
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.'
-      }
-      setMessages(prev => [...prev, aiMessage])
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMessageId 
+          ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
+          : msg
+      ))
     } finally {
       setLoading(false)
     }
@@ -69,8 +150,13 @@ function App() {
             </div>
           )}
           {messages.map((msg, idx) => (
-            <div key={idx} className={`message ${msg.role}`}>
-              <div className="message-content">{msg.content}</div>
+            <div key={msg.id || idx} className={`message ${msg.role}`}>
+              <div className="message-content">
+                {msg.content || (msg.role === 'assistant' && loading ? 'Thinking...' : '')}
+                {msg.role === 'assistant' && loading && idx === messages.length - 1 && !msg.content && (
+                  <span className="typing-indicator">●</span>
+                )}
+              </div>
               {msg.sources && msg.sources.length > 0 && (
                 <div className="message-sources">
                   <div className="sources-label">Sources:</div>
@@ -89,11 +175,7 @@ function App() {
               )}
             </div>
           ))}
-          {loading && (
-            <div className="message assistant">
-              <div className="message-content">Thinking...</div>
-            </div>
-          )}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="chat-input-container">
