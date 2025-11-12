@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { testConnection } from './config/database.js';
-import { handleChat, handleChatStream } from './controllers/chatController.js';
-import { addDocumentHandler, getAllDocumentsHandler } from './controllers/documentController.js';
+import { handleChat, handleChatStream } from './controllers/chat.js';
+import { addDocumentHandler, getAllDocumentsHandler } from './controllers/document.js';
 import { validateChatRequest, validateDocumentRequest } from './utils/validation.js';
 import { errorHandler } from './utils/errors.js';
 import { logger } from './utils/logger.js';
