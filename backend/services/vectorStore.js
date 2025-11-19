@@ -126,103 +126,78 @@ export async function searchSimilar(
     throw new Error('Query cannot be empty');
   }
 
+  const expansionEnabled = process.env.QUERY_EXPANSION_ENABLED !== 'false';
+  const maxVariants = Math.max(
+    1,
+    parseInt(process.env.QUERY_EXPANSION_MAX_VARIANTS || '3')
+  );
+
+  const queries = expansionEnabled
+    ? generateQueryVariants(query, maxVariants)
+    : [query.trim()];
+
+  logger.debug(
+    expansionEnabled
+      ? `Query expansion enabled. Variants: ${queries.length}`
+      : 'Query expansion disabled'
+  );
+
   try {
-    // Step 1: Convert query to embedding
-    logger.debug('Generating embedding for query...');
-    const queryEmbedding = await getEmbedding(query);
+    const { filterConditions, filterParams } = buildMetadataFilter(metadataFilter);
 
-    // Step 2: Build metadata filter conditions
-    const filterConditions = [];
-    const filterParams = [];
-    let paramIndex = 4; // Start after embedding, minSimilarity, and limit params
+    const resultsMap = new Map();
 
-    // Validate metadata key names to prevent SQL injection
-    const isValidKey = (key) => {
-      return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key);
-    };
+    for (const variant of queries) {
+      logger.debug(`Searching with variant: "${variant}"`);
+      const queryEmbedding = await getEmbedding(variant);
 
-    if (metadataFilter && Object.keys(metadataFilter).length > 0) {
-      for (const [key, value] of Object.entries(metadataFilter)) {
-        if (value === null || value === undefined) {
-          continue;
+      const whereClause = [`1 - (embedding <=> $1::vector) >= $2`, ...filterConditions];
+
+      const searchQuery = `
+        SELECT 
+          id,
+          content,
+          metadata,
+          1 - (embedding <=> $1::vector) AS similarity
+        FROM document_embeddings
+        WHERE ${whereClause.join(' AND ')}
+        ORDER BY embedding <=> $1::vector
+        LIMIT $3
+      `;
+
+      const result = await pool.query(searchQuery, [
+        `[${queryEmbedding.join(',')}]`,
+        minSimilarity,
+        limit,
+        ...filterParams
+      ]);
+
+      result.rows.forEach(row => {
+        const existing = resultsMap.get(row.id);
+        const similarity = parseFloat(row.similarity);
+
+        if (!existing || similarity > existing.similarity) {
+          resultsMap.set(row.id, {
+            id: row.id,
+            content: row.content,
+            metadata: row.metadata,
+            similarity
+          });
         }
-
-        // Validate key name to prevent SQL injection
-        if (!isValidKey(key)) {
-          logger.warn(`Invalid metadata key name: ${key}. Skipping filter.`);
-          continue;
-        }
-
-        // Handle simple equality: { source: 'CoinDesk' }
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          filterConditions.push(`metadata->>'${key}' = $${paramIndex}`);
-          filterParams.push(String(value));
-          paramIndex++;
-        }
-        // Handle operators: { source: { $in: [...] } }
-        else if (typeof value === 'object' && !Array.isArray(value)) {
-          for (const [op, opValue] of Object.entries(value)) {
-            if (op === '$in' && Array.isArray(opValue)) {
-              // IN operator: { source: { $in: ['CoinDesk', 'Benzinga'] } }
-              const placeholders = opValue.map((_, i) => `$${paramIndex + i}`).join(', ');
-              filterConditions.push(`metadata->>'${key}' IN (${placeholders})`);
-              filterParams.push(...opValue.map(v => String(v)));
-              paramIndex += opValue.length;
-            } else if (op === '$like' || op === '$ilike') {
-              // LIKE/ILIKE operator: { title: { $like: '%Ethereum%' } }
-              const likeOp = op === '$ilike' ? 'ILIKE' : 'LIKE';
-              filterConditions.push(`metadata->>'${key}' ${likeOp} $${paramIndex}`);
-              filterParams.push(String(opValue));
-              paramIndex++;
-            } else if (op === '$exists') {
-              // EXISTS operator: { source: { $exists: true } }
-              if (opValue) {
-                filterConditions.push(`metadata ? '${key}'`);
-              } else {
-                filterConditions.push(`NOT (metadata ? '${key}')`);
-              }
-            }
-          }
-        }
-      }
+      });
     }
 
-    // Step 3: Build the search query with metadata filters
-    const whereClause = [
-      `1 - (embedding <=> $1::vector) >= $2`
-    ];
+    const combinedResults = Array.from(resultsMap.values())
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
 
-    if (filterConditions.length > 0) {
-      whereClause.push(...filterConditions);
-    }
+    logger.info(
+      `Found ${combinedResults.length} unique documents` +
+      `${filterConditions.length > 0 ? ' with metadata filters' : ''}` +
+      `${queries.length > 1 ? ` (from ${queries.length} variants)` : ''}`
+    );
 
-    const searchQuery = `
-      SELECT 
-        id,
-        content,
-        metadata,
-        1 - (embedding <=> $1::vector) AS similarity
-      FROM document_embeddings
-      WHERE ${whereClause.join(' AND ')}
-      ORDER BY embedding <=> $1::vector
-      LIMIT $3
-    `;
-
-    const result = await pool.query(searchQuery, [
-      `[${queryEmbedding.join(',')}]`,
-      minSimilarity,
-      limit,
-      ...filterParams
-    ]);
-
-    logger.info(`Found ${result.rows.length} similar documents${filterConditions.length > 0 ? ' with metadata filters' : ''}`);
-    
-    return result.rows.map(row => ({
-      id: row.id,
-      content: row.content,
-      metadata: row.metadata,
-      similarity: parseFloat(row.similarity)
-    }));
+    return combinedResults;
   } catch (error) {
     logger.error('Error searching documents:', error);
     throw error;
@@ -258,6 +233,102 @@ export async function deleteDocument(id) {
     logger.error('Error deleting document:', error);
     throw error;
   }
+}
+
+/**
+ * Builds SQL clauses for metadata filtering
+ */
+function buildMetadataFilter(metadataFilter = {}) {
+  const filterConditions = [];
+  const filterParams = [];
+  let paramIndex = 4; // After embedding, similarity, limit
+
+  const isValidKey = (key) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key);
+
+  if (!metadataFilter || Object.keys(metadataFilter).length === 0) {
+    return { filterConditions, filterParams };
+  }
+
+  for (const [key, value] of Object.entries(metadataFilter)) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (!isValidKey(key)) {
+      logger.warn(`Invalid metadata key name: ${key}. Skipping filter.`);
+      continue;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      filterConditions.push(`metadata->>'${key}' = $${paramIndex}`);
+      filterParams.push(String(value));
+      paramIndex++;
+    } else if (typeof value === 'object' && !Array.isArray(value)) {
+      for (const [op, opValue] of Object.entries(value)) {
+        if (op === '$in' && Array.isArray(opValue)) {
+          if (opValue.length === 0) {
+            continue;
+          }
+          const placeholders = opValue.map((_, i) => `$${paramIndex + i}`).join(', ');
+          filterConditions.push(`metadata->>'${key}' IN (${placeholders})`);
+          filterParams.push(...opValue.map(v => String(v)));
+          paramIndex += opValue.length;
+        } else if ((op === '$like' || op === '$ilike') && typeof opValue === 'string') {
+          const likeOp = op === '$ilike' ? 'ILIKE' : 'LIKE';
+          filterConditions.push(`metadata->>'${key}' ${likeOp} $${paramIndex}`);
+          filterParams.push(String(opValue));
+          paramIndex++;
+        } else if (op === '$exists') {
+          if (opValue) {
+            filterConditions.push(`metadata ? '${key}'`);
+          } else {
+            filterConditions.push(`NOT (metadata ? '${key}')`);
+          }
+        }
+      }
+    }
+  }
+
+  return { filterConditions, filterParams };
+}
+
+/**
+ * Generates query variants for expansion
+ */
+function generateQueryVariants(query, maxVariants = 3) {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const variants = new Set([trimmed]);
+  const normalized = trimmed.replace(/\?+$/, '');
+  const lower = normalized.toLowerCase();
+
+  const templates = [
+    `What is ${normalized}?`,
+    `Explain ${normalized}`,
+    `Detailed overview of ${normalized}`,
+    `How does ${normalized} work?`,
+    `Key facts about ${normalized}`
+  ];
+
+  templates.forEach(template => {
+    if (variants.size >= maxVariants) {
+      return;
+    }
+    // Avoid duplicates if template equals existing variant
+    if (!variants.has(template)) {
+      variants.add(template);
+    }
+  });
+
+  // If query already in question form, add statement variant
+  if ((lower.startsWith('what is ') || lower.startsWith('who is ') || lower.startsWith('tell me about ')) && variants.size < maxVariants) {
+    variants.add(normalized);
+  }
+
+  return Array.from(variants).slice(0, maxVariants);
 }
 
 /**
