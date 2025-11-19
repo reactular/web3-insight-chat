@@ -70,6 +70,8 @@ An AI-powered chat application that provides intelligent insights about Web3 tre
 - **PostgreSQL** - Database
 - **pgvector** - Vector similarity search
 - **OpenAI API** - LLM and embeddings
+- **Query expansion** - Automatic paraphrases for better recall
+- **Metadata filters** - JSON-based filtering by source/title
 
 ### Integrations
 - **CoinGecko** - Cryptocurrency market data
@@ -141,6 +143,12 @@ OPENAI_API_KEY=your_openai_key_here
 # Optional: Use Anthropic instead
 # LLM_PROVIDER=anthropic
 # ANTHROPIC_API_KEY=your_anthropic_key_here
+
+# Vector search (optional tuning)
+# VECTOR_SEARCH_LIMIT=5
+# VECTOR_MIN_SIMILARITY=0.6
+# QUERY_EXPANSION_ENABLED=true
+# QUERY_EXPANSION_MAX_VARIANTS=3
 ```
 
 ### 4. Initialize Database
