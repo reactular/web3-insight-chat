@@ -5,7 +5,17 @@ function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [availableSources, setAvailableSources] = useState([])
+  const [selectedSources, setSelectedSources] = useState([])
   const messagesEndRef = useRef(null)
+
+  // Fetch possible sources for filtering
+  useEffect(() => {
+    fetch('/api/metadata/values?key=source')
+      .then(res => res.json())
+      .then(data => setAvailableSources(Array.isArray(data.values) ? data.values : []))
+      .catch(() => setAvailableSources([]))
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -34,36 +44,35 @@ function App() {
     }
     setMessages(prev => [...prev, aiMessage])
 
+    // Build filters
+    let filters = {}
+    if (selectedSources.length > 0) {
+      filters.source = selectedSources.length === 1 ? selectedSources[0] : selectedSources
+    }
+
     try {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: currentInput }),
+        body: JSON.stringify({ message: currentInput, filters }),
       })
-
       if (!response.ok) {
         throw new Error('Failed to get response')
       }
-
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
       let currentEvent = null
-
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = ''
-
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i]
-
-          // SSE format: event: <event> or data: <json> followed by empty line
           if (line.startsWith('event: ')) {
             currentEvent = line.slice(7).trim()
           } else if (line.startsWith('data: ')) {
@@ -71,31 +80,26 @@ function App() {
             if (dataStr && currentEvent) {
               try {
                 const data = JSON.parse(dataStr)
-
                 if (currentEvent === 'sources') {
-                  // Update sources
-                  setMessages(prev => prev.map(msg => 
+                  setMessages(prev => prev.map(msg =>
                     msg.id === aiMessageId 
                       ? { ...msg, sources: data.sources || [] }
                       : msg
                   ))
                 } else if (currentEvent === 'chunk') {
-                  // Append chunk to content
-                  setMessages(prev => prev.map(msg => 
+                  setMessages(prev => prev.map(msg =>
                     msg.id === aiMessageId 
                       ? { ...msg, content: msg.content + (data.content || '') }
                       : msg
                   ))
                 } else if (currentEvent === 'done') {
-                  // Streaming complete
-                  setMessages(prev => prev.map(msg => 
+                  setMessages(prev => prev.map(msg =>
                     msg.id === aiMessageId 
                       ? { ...msg, content: data.fullContent || msg.content }
                       : msg
                   ))
                 } else if (currentEvent === 'error') {
-                  // Handle error
-                  setMessages(prev => prev.map(msg => 
+                  setMessages(prev => prev.map(msg =>
                     msg.id === aiMessageId 
                       ? { ...msg, content: data.error || 'An error occurred' }
                       : msg
@@ -108,17 +112,15 @@ function App() {
             }
             currentEvent = null
           } else if (line.trim() === '') {
-            // Empty line separates SSE events
             currentEvent = null
           } else {
-            // Keep incomplete line in buffer
             buffer = line + '\n'
           }
         }
       }
     } catch (error) {
       console.error('Error:', error)
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === aiMessageId 
           ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
           : msg
@@ -135,6 +137,16 @@ function App() {
     }
   }
 
+  // Handle source select (multi-select)
+  const handleSourceChange = e => {
+    const val = e.target.value
+    setSelectedSources(prev =>
+      prev.includes(val)
+        ? prev.filter(src => src !== val)
+        : [...prev, val]
+    )
+  }
+
   return (
     <div className="app">
       <div className="chat-container">
@@ -142,7 +154,32 @@ function App() {
           <h1>Web3 Insight Chat</h1>
           <p>Ask me about Web3 trends and latest developments</p>
         </div>
-        
+        {/* Filter UI */}
+        <div style={{padding: '10px', borderBottom: '1px solid #e0e0e0', background: '#fafbff'}}>
+          <label htmlFor="source-multiselect" style={{fontWeight: 600, fontSize: 13, marginRight: 8}}>Source Filter:</label>
+          {availableSources.length === 0 ? (
+            <span style={{fontSize:12, color:'#888'}}>Loading sources...</span>
+          ) : (
+            availableSources.map((src) => (
+              <label key={src} style={{marginRight: 14, fontSize: 13}}>
+                <input 
+                  type="checkbox" 
+                  value={src}
+                  checked={selectedSources.includes(src)}
+                  onChange={handleSourceChange}
+                  disabled={loading}
+                  style={{marginRight: 4}} 
+                />
+                {src}
+              </label>
+            ))
+          )}
+          {selectedSources.length > 0 && (
+            <span style={{marginLeft:10, fontSize:12, opacity:0.7}}>
+              Filtering by: {selectedSources.join(', ')}
+            </span>
+          )}
+        </div>
         <div className="chat-messages">
           {messages.length === 0 && (
             <div className="welcome-message">
@@ -177,7 +214,6 @@ function App() {
           ))}
           <div ref={messagesEndRef} />
         </div>
-
         <div className="chat-input-container">
           <textarea
             className="chat-input"
