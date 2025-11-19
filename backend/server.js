@@ -7,6 +7,7 @@ import { validateChatRequest, validateDocumentRequest } from './utils/validation
 import { errorHandler } from './utils/errors.js';
 import { logger } from './utils/logger.js';
 import { validateEnvironment } from './utils/envValidator.js';
+import { getMetadataValues } from './services/vectorStore.js';
 
 // Validate environment variables on startup
 try {
@@ -31,9 +32,20 @@ app.get('/health', async (req, res) => {
   });
 });
 
+app.get('/api/metadata/values', async (req, res) => {
+  const key = req.query.key;
+  if (!key) return res.status(400).json({ error: 'Key required' });
+  try {
+    const values = await getMetadataValues(key);
+    res.json({ values });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
 // Chat endpoints (with validation)
-app.post('/api/chat', validateChatRequest, handleChat);
-app.post('/api/chat/stream', validateChatRequest, handleChatStream);
+app.post('/api/chat', validateChatRequest, (req, res) => handleChat(req, res, req.body.filters || {}));
+app.post('/api/chat/stream', validateChatRequest, (req, res) => handleChatStream(req, res, req.body.filters || {}));
 
 // Vector store management endpoints (with validation)
 app.post('/api/documents', validateDocumentRequest, addDocumentHandler);

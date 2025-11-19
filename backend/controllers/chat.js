@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
 /**
  * Process chat message (non-streaming)
  */
-export async function handleChat(req, res) {
+export async function handleChat(req, res, filters = {}) {
   try {
     const { message } = req.body;
     // Validation already done by middleware, but keep for safety
@@ -27,7 +27,7 @@ export async function handleChat(req, res) {
     try {
       const searchLimit = parseInt(process.env.VECTOR_SEARCH_LIMIT || '3');
       const minSimilarity = parseFloat(process.env.VECTOR_MIN_SIMILARITY || '0.6');
-      const similarDocs = await searchSimilar(message, searchLimit, minSimilarity);
+      const similarDocs = await searchSimilar(message, searchLimit, minSimilarity, filters);
       if (similarDocs.length > 0) {
         vectorContext = similarDocs
           .map(doc => `[From stored knowledge]: ${doc.content}`)
@@ -88,7 +88,7 @@ export async function handleChat(req, res) {
 /**
  * Process chat message with streaming response (Server-Sent Events)
  */
-export async function handleChatStream(req, res) {
+export async function handleChatStream(req, res, filters = {}) {
   try {
     const { message } = req.body;
     // Validation already done by middleware, but keep for safety
@@ -116,7 +116,7 @@ export async function handleChatStream(req, res) {
     try {
       const searchLimit = parseInt(process.env.VECTOR_SEARCH_LIMIT || '3');
       const minSimilarity = parseFloat(process.env.VECTOR_MIN_SIMILARITY || '0.6');
-      const similarDocs = await searchSimilar(message, searchLimit, minSimilarity);
+      const similarDocs = await searchSimilar(message, searchLimit, minSimilarity, filters);
       if (similarDocs.length > 0) {
         vectorContext = similarDocs
           .map(doc => `[From stored knowledge]: ${doc.content}`)
